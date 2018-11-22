@@ -2,11 +2,14 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/chenminjian/go-bittorrent/config"
 	"github.com/chenminjian/go-bittorrent/core"
 )
 
 func main() {
-	_, err := core.NewNode()
+	conf := &config.Config{Pid: "", Port: 9527}
+	_, err := core.NewNode(conf)
 	if err != nil {
 		panic(err)
 	}

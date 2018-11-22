@@ -1,14 +1,20 @@
 package basic
 
-import "github.com/chenminjian/go-bittorrent/p2p/peer"
+import (
+	"github.com/chenminjian/go-bittorrent/p2p/network"
+	"github.com/chenminjian/go-bittorrent/p2p/peer"
+)
 
 type BasicHost struct {
-	id   peer.ID
-	port int
+	id      peer.ID
+	port    int
+	network net.Network
 }
 
-func New() *BasicHost {
-	h := &BasicHost{}
+func New(network net.Network) *BasicHost {
+	h := &BasicHost{
+		network: network,
+	}
 	return h
 }
 
