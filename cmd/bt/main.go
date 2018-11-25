@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"time"
 
 	"github.com/chenminjian/go-bittorrent/config"
 	"github.com/chenminjian/go-bittorrent/core"
@@ -14,6 +14,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("before select")
-	select {}
+	for {
+		time.Sleep(time.Minute)
+	}
 }

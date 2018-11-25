@@ -21,3 +21,7 @@ func New(network net.Network) *BasicHost {
 func (h *BasicHost) ID() peer.ID {
 	return ""
 }
+
+func (h *BasicHost) Network() net.Network {
+	return h.network
+}
