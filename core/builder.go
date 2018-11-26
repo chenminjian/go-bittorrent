@@ -5,6 +5,7 @@ import (
 	"github.com/chenminjian/go-bittorrent/p2p"
 	p2pconfig "github.com/chenminjian/go-bittorrent/p2p/config"
 	"github.com/chenminjian/go-bittorrent/p2p/host"
+	"github.com/chenminjian/go-bittorrent/routing/dht"
 )
 
 func NewNode(config *config.Config) (*BTNode, error) {
@@ -23,6 +24,8 @@ func setupNode(n *BTNode, config *config.Config) error {
 	n.PeerHost = p2p.New(p2pConfig)
 
 	startListening(n.PeerHost)
+
+	n.Routing = dht.New(n.PeerHost)
 
 	return nil
 }

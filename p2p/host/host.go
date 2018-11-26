@@ -9,4 +9,6 @@ type Host interface {
 	ID() peer.ID
 
 	Network() net.Network
+
+	SetPacketHandler(net.PacketHandler)
 }

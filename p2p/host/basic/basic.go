@@ -25,3 +25,7 @@ func (h *BasicHost) ID() peer.ID {
 func (h *BasicHost) Network() net.Network {
 	return h.network
 }
+
+func (h *BasicHost) SetPacketHandler(handler net.PacketHandler) {
+	h.network.SetPacketHandler(handler)
+}
