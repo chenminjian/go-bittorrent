@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	conf := &config.Config{Pid: "", Port: 9527}
+	conf := config.Default()
 	_, err := core.NewNode(conf)
 	if err != nil {
 		panic(err)
