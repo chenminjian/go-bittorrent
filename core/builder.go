@@ -27,6 +27,10 @@ func setupNode(n *BTNode, config *config.Config) error {
 
 	n.Routing = dht.New(n.PeerHost)
 
+	if err := n.Bootstrap(config); err != nil {
+		return err
+	}
+
 	return nil
 }
 
