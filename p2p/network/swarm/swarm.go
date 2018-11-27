@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/chenminjian/go-bittorrent/common/addr"
 	"github.com/chenminjian/go-bittorrent/p2p/config"
 	p2pnet "github.com/chenminjian/go-bittorrent/p2p/network"
 	"github.com/chenminjian/go-bittorrent/p2p/peer"
@@ -55,6 +56,20 @@ func (s *Swarm) Listen() error {
 
 func (s *Swarm) SetPacketHandler(handler p2pnet.PacketHandler) {
 	s.packetH = handler
+}
+
+func (s *Swarm) SendData(data []byte, addr addr.Addr) error {
+	raddr, err := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%d", addr.IP, addr.Port))
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("send find_node to: %s\n", raddr)
+
+	if _, err := s.conn.WriteToUDP(data, raddr); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (s *Swarm) startHandlingPackets() {

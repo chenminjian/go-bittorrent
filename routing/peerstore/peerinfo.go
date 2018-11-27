@@ -1,9 +1,11 @@
 package peerstore
 
-import "github.com/chenminjian/go-bittorrent/p2p/peer"
+import (
+	"github.com/chenminjian/go-bittorrent/common/addr"
+	"github.com/chenminjian/go-bittorrent/p2p/peer"
+)
 
 type PeerInfo struct {
-	IP   string
-	Port int
-	ID   peer.ID
+	addr.Addr
+	ID peer.ID
 }

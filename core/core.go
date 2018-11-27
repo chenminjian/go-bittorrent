@@ -2,12 +2,15 @@ package core
 
 import (
 	"fmt"
-	"github.com/chenminjian/go-bittorrent/config"
-	"github.com/chenminjian/go-bittorrent/p2p/host"
-	"github.com/chenminjian/go-bittorrent/routing"
-	pstore "github.com/chenminjian/go-bittorrent/routing/peerstore"
 	"strconv"
 	"strings"
+
+	"github.com/chenminjian/go-bittorrent/common/addr"
+	"github.com/chenminjian/go-bittorrent/config"
+	"github.com/chenminjian/go-bittorrent/p2p/host"
+	"github.com/chenminjian/go-bittorrent/p2p/peer"
+	"github.com/chenminjian/go-bittorrent/routing"
+	pstore "github.com/chenminjian/go-bittorrent/routing/peerstore"
 )
 
 type BTNode struct {
@@ -29,7 +32,8 @@ func (node *BTNode) Bootstrap(conf *config.Config) error {
 				continue
 			}
 
-			peerInfo := pstore.PeerInfo{IP: parts[0], Port: port}
+			id := peer.ID(fmt.Sprintf("%d", i))
+			peerInfo := pstore.PeerInfo{Addr: addr.Addr{IP: parts[0], Port: port}, ID: id}
 			bootstrapPeers = append(bootstrapPeers, peerInfo)
 		}
 
