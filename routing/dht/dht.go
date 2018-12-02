@@ -123,7 +123,8 @@ func (dht *DHT) boostrapWorker() {
 }
 
 func (dht *DHT) findPeerSingle(id peer.ID, target peer.ID) error {
-	msg := krpc.NewFindNodeMessage(dht.host.ID(), target)
+	txID := dht.txMgr.UniqueID()
+	msg := krpc.NewFindNodeMessage(dht.host.ID(), target, txID)
 	encodeMsg := bencoded.Encode(msg)
 
 	peer, err := dht.peerstore.PeerInfo(id)

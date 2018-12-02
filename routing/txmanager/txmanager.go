@@ -1,16 +1,30 @@
 package txmanager
 
-import "sync"
+import (
+	"encoding/binary"
+	"sync"
+)
 
 type txManager struct {
-	txMap map[string]*TxInfo
-	mutex sync.RWMutex
+	idCount uint32
+	txMap   map[string]*TxInfo
+	mutex   sync.RWMutex
 }
 
 func New() TxManager {
 	return &txManager{
 		txMap: make(map[string]*TxInfo),
 	}
+}
+
+func (tm *txManager) UniqueID() string {
+	tm.mutex.Lock()
+	defer tm.mutex.RLock()
+
+	tm.idCount += 1
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, tm.idCount)
+	return string(buf)
 }
 
 func (tm *txManager) Get(key string) (*TxInfo, error) {
