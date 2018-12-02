@@ -1,0 +1,20 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "RotHLaLF0l4Laq94OQLY8jhOSxw=",
+			"path": "github.com/mr-tron/base58",
+			"revision": "89529c6904fcd077434931b4eac8b4b2f0991baf",
+			"revisionTime": "2018-10-20T22:18:29Z",
+			"version": "v1.1.0",
+			"versionExact": "v1.1.0"
+		},
+		{
+			"path": "https://github.com/mr-tron/base58",
+			"revision": "v1.1.0",
+			"version": "v1.1.0"
+		}
+	],
+	"rootPath": "github.com/chenminjian/go-bittorrent"
+}
