@@ -7,7 +7,6 @@ import (
 )
 
 type BasicHost struct {
-	id      peer.ID
 	port    int
 	network p2pnet.Network
 }
@@ -20,7 +19,7 @@ func New(network p2pnet.Network) *BasicHost {
 }
 
 func (h *BasicHost) ID() peer.ID {
-	return ""
+	return h.network.LocalPeer()
 }
 
 func (h *BasicHost) Network() p2pnet.Network {

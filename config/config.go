@@ -1,9 +1,7 @@
 package config
 
-import "github.com/chenminjian/go-bittorrent/p2p/peer"
-
 type Config struct {
-	Pid       peer.ID
+	Pid       string
 	Port      int
 	Bootstrap []string
 }

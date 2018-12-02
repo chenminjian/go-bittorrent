@@ -27,6 +27,10 @@ func New(config *config.Config) *Swarm {
 	return swm
 }
 
+func (s *Swarm) LocalPeer() peer.ID {
+	return s.id
+}
+
 func (s *Swarm) Listen() error {
 	addr := fmt.Sprintf(":%d", s.port)
 	listener, err := net.ListenPacket("udp", addr)

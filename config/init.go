@@ -2,7 +2,7 @@ package config
 
 func Default() *Config {
 	return &Config{
-		Pid:  "",
+		Pid:  "2A4XMxQwz7oPW9wvEe8t5PhyQow2",
 		Port: 9527,
 		Bootstrap: []string{
 			"router.bittorrent.com:6881",
