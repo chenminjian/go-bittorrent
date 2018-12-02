@@ -189,9 +189,17 @@ func DecodeDict(data []byte, start int) (
 }
 
 // Decode decodes a bencoded string to string, int, list or map.
-func Decode(data []byte) (result interface{}, err error) {
-	result, _, err = decodeItem(data, 0)
-	return
+func Decode(data []byte) (map[string]interface{}, error) {
+	result, _, err := decodeItem(data, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	dict, ok := result.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("data is not map")
+	}
+	return dict, nil
 }
 
 // EncodeString encodes a string value.

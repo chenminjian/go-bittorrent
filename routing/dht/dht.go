@@ -1,6 +1,7 @@
 package dht
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
@@ -13,12 +14,16 @@ import (
 	"github.com/chenminjian/go-bittorrent/routing/kbucket"
 	"github.com/chenminjian/go-bittorrent/routing/krpc"
 	pstore "github.com/chenminjian/go-bittorrent/routing/peerstore"
+	"github.com/chenminjian/go-bittorrent/routing/txmanager"
 )
+
+var unknownMsgTypeErr = errors.New("unknown message type")
 
 type DHT struct {
 	host         host.Host
 	routingTable *kbucket.RoutingTable
 	peerstore    pstore.PeerStore
+	txMgr        txmanager.TxManager
 }
 
 func New(h host.Host) *DHT {
@@ -26,6 +31,7 @@ func New(h host.Host) *DHT {
 		host:         h,
 		routingTable: kbucket.NewRoutingTable(),
 		peerstore:    pstore.NewPeerStore(),
+		txMgr:        txmanager.New(),
 	}
 
 	h.SetPacketHandler(dht.handlePacket)
@@ -57,8 +63,41 @@ func (dht *DHT) FindPeer(target peer.ID) error {
 	return nil
 }
 
+// handlePacket handles network packet.
 func (dht *DHT) handlePacket(packet p2pnet.Packet) {
-	fmt.Printf("receive:%s", string(packet.Data()))
+	handler := func() error {
+		dict, err := bencoded.Decode(packet.Data())
+		if err != nil {
+			return err
+		}
+
+		switch dict["y"] {
+		case "q":
+			fmt.Println("receive query")
+		case "r":
+			txID, ok := dict["t"].(string)
+			if !ok {
+				return errors.New("tx id format error")
+			}
+			txInfo, err := dht.txMgr.Get(txID)
+			if err != nil {
+				return err
+			}
+			switch txInfo.Message["q"].(string) {
+			case krpc.Message_FIND_NODE:
+				fmt.Println("receive find_node resp")
+			default:
+				return errors.New("unreachable")
+			}
+		default:
+			return err
+		}
+		return nil
+	}
+
+	if err := handler(); err != nil {
+		fmt.Println(err)
+	}
 }
 
 func (dht *DHT) doBoostrap() {
@@ -91,6 +130,12 @@ func (dht *DHT) findPeerSingle(id peer.ID, target peer.ID) error {
 	if err != nil {
 		return err
 	}
+
+	// record tx
+	dht.txMgr.Set(msg["t"].(string), &txmanager.TxInfo{
+		PeerInfo: peer,
+		Message:  msg,
+	})
 
 	// send msg
 	err = dht.host.SendMessage(encodeMsg, addr.Addr{IP: peer.IP, Port: peer.Port})

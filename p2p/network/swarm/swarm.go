@@ -64,7 +64,7 @@ func (s *Swarm) SendData(data []byte, addr addr.Addr) error {
 		return err
 	}
 
-	fmt.Printf("send find_node to: %s\n", raddr)
+	// fmt.Printf("send find_node to: %s\n", raddr)
 
 	if _, err := s.conn.WriteToUDP(data, raddr); err != nil {
 		return err
