@@ -19,7 +19,7 @@ func New() TxManager {
 
 func (tm *txManager) UniqueID() string {
 	tm.mutex.Lock()
-	defer tm.mutex.RLock()
+	defer tm.mutex.Unlock()
 
 	tm.idCount += 1
 	buf := make([]byte, 4)
