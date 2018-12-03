@@ -79,13 +79,22 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 			if !ok {
 				return errors.New("tx id format error")
 			}
+
 			txInfo, err := dht.txMgr.Get(txID)
 			if err != nil {
 				return err
 			}
+
+			dht.txMgr.Del(txID)
+
 			switch txInfo.Message["q"].(string) {
 			case krpc.Message_FIND_NODE:
-				fmt.Println("receive find_node resp")
+				content, ok := dict["r"].(map[string]interface{})
+				if !ok {
+					return errors.New("content is not map[string]string")
+				}
+
+				return dht.handleFindNodeResp(content)
 			default:
 				return errors.New("unreachable")
 			}
@@ -98,6 +107,38 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 	if err := handler(); err != nil {
 		fmt.Println(err)
 	}
+}
+
+func (dht *DHT) handleFindNodeResp(content map[string]interface{}) error {
+	id, ok := content["id"].(string)
+	if !ok {
+		return errors.New("id is not string")
+	}
+	fmt.Printf("receive find_node resp,id:%s\n", peer.ID(id).Pretty())
+
+	nodesStr, ok := content["nodes"].(string)
+	if len(nodesStr)%26 != 0 {
+		return errors.New("nodes' length is 26's multiple")
+	}
+
+	num := len(nodesStr) / 26
+	for i := 0; i < num; i++ {
+		nodeStr := string(nodesStr[i*26 : (i+1)*26])
+		pi, err := pstore.Decode(nodeStr)
+		if err != nil {
+			return err
+		}
+
+		// add peer
+		dht.addPeer(pi)
+	}
+
+	return nil
+}
+
+func (dht *DHT) addPeer(info *pstore.PeerInfo) {
+	dht.peerstore.AddAddr(*info)
+	dht.routingTable.Add(info.ID)
 }
 
 func (dht *DHT) doBoostrap() {
