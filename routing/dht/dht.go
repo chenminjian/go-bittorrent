@@ -29,7 +29,7 @@ type DHT struct {
 func New(h host.Host) *DHT {
 	dht := &DHT{
 		host:         h,
-		routingTable: kbucket.NewRoutingTable(),
+		routingTable: kbucket.NewRoutingTable(20, h.ID()),
 		peerstore:    pstore.NewPeerStore(),
 		txMgr:        txmanager.New(),
 	}
@@ -42,7 +42,7 @@ func New(h host.Host) *DHT {
 func (dht *DHT) Bootstrap(peers []pstore.PeerInfo) error {
 	for i := 0; i < len(peers); i++ {
 		info := peers[i]
-		dht.routingTable.Add(info.ID)
+		dht.routingTable.Update(info.ID)
 		dht.peerstore.AddAddr(info)
 	}
 
@@ -138,19 +138,20 @@ func (dht *DHT) handleFindNodeResp(content map[string]interface{}) error {
 
 func (dht *DHT) addPeer(info *pstore.PeerInfo) {
 	dht.peerstore.AddAddr(*info)
-	dht.routingTable.Add(info.ID)
+	dht.routingTable.Update(info.ID)
 }
 
 func (dht *DHT) doBoostrap() {
 	for {
 		select {
 		case <-time.After(time.Second * 5):
-			dht.boostrapWorker()
+			dht.bootstrapWorker()
 		}
 	}
 }
 
-func (dht *DHT) boostrapWorker() {
+// bootstrapWorker sends find_peer to three random peer.
+func (dht *DHT) bootstrapWorker() {
 	randId := func() peer.ID {
 		data := make([]byte, 160)
 		rand.Read(data)
