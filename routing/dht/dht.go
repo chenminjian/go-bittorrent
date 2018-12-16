@@ -3,7 +3,6 @@ package dht
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"time"
 
 	"github.com/chenminjian/go-bittorrent/common/addr"
@@ -39,14 +38,9 @@ func New(h host.Host) *DHT {
 	return dht
 }
 
-func (dht *DHT) Bootstrap(peers []pstore.PeerInfo) error {
-	for i := 0; i < len(peers); i++ {
-		info := peers[i]
-		dht.routingTable.Update(info.ID)
-		dht.peerstore.AddAddr(info)
-	}
+func (dht *DHT) Bootstrap(peers []addr.Addr) error {
 
-	go dht.doBoostrap()
+	go dht.doBootstrap(peers)
 
 	return nil
 }
@@ -54,6 +48,11 @@ func (dht *DHT) Bootstrap(peers []pstore.PeerInfo) error {
 func (dht *DHT) FindPeer(target peer.ID) error {
 	ids := dht.routingTable.NearestPeers(target, 3)
 
+	fmt.Printf("rt size:%d\n", dht.routingTable.Size())
+	fmt.Printf("ids size:%d\n", len(ids))
+	if len(ids) > 0 {
+		fmt.Printf("id:%s\n", ids[0].Pretty())
+	}
 	for _, id := range ids {
 		if err := dht.findPeerSingle(id, target); err != nil {
 			fmt.Printf("findPeerSingle error: %s\n", err)
@@ -141,24 +140,33 @@ func (dht *DHT) addPeer(info *pstore.PeerInfo) {
 	dht.routingTable.Update(info.ID)
 }
 
-func (dht *DHT) doBoostrap() {
+func (dht *DHT) doBootstrap(peers []addr.Addr) {
+	var count int
 	for {
 		select {
 		case <-time.After(time.Second * 5):
-			dht.bootstrapWorker()
+			if count%6 == 0 {
+				fmt.Println("a")
+				go dht.connectBootstrapPeers(peers)
+			}
+
+			go dht.bootstrapWorker()
+
+			count++
 		}
+	}
+}
+
+func (dht *DHT) connectBootstrapPeers(peers []addr.Addr) {
+	id := peer.RandomID()
+	for i := 0; i < len(peers); i++ {
+		dht.bootstrapFindPeer(pstore.PeerInfo{Addr: peers[i], ID: "useless"}, id)
 	}
 }
 
 // bootstrapWorker sends find_peer to three random peer.
 func (dht *DHT) bootstrapWorker() {
-	randId := func() peer.ID {
-		data := make([]byte, 160)
-		rand.Read(data)
-		return peer.ID(data)
-	}
-
-	id := randId()
+	id := peer.RandomID()
 	if err := dht.FindPeer(id); err != nil {
 		fmt.Println(err)
 	}
@@ -183,6 +191,25 @@ func (dht *DHT) findPeerSingle(id peer.ID, target peer.ID) error {
 	// send msg
 	err = dht.host.SendMessage(encodeMsg, addr.Addr{IP: peer.IP, Port: peer.Port})
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dht *DHT) bootstrapFindPeer(receiver pstore.PeerInfo, target peer.ID) error {
+	txID := dht.txMgr.UniqueID()
+	msg := krpc.NewFindNodeMessage(dht.host.ID(), target, txID)
+	encodeMsg := bencoded.Encode(msg)
+
+	// record tx
+	dht.txMgr.Set(msg["t"].(string), &txmanager.TxInfo{
+		PeerInfo: receiver,
+		Message:  msg,
+	})
+
+	// send msg
+	if err := dht.host.SendMessage(encodeMsg, receiver.Addr); err != nil {
 		return err
 	}
 

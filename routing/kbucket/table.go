@@ -110,6 +110,17 @@ func (rt *RoutingTable) NearestPeers(id peer.ID, count int) []peer.ID {
 	return out
 }
 
+// Size returns the total number of peers in the routing table
+func (rt *RoutingTable) Size() int {
+	var tot int
+	rt.mutex.RLock()
+	for _, buck := range rt.Buckets {
+		tot += buck.Len()
+	}
+	rt.mutex.RUnlock()
+	return tot
+}
+
 // generate new bucket
 func (rt *RoutingTable) nextBucket() {
 	bucket := rt.Buckets[len(rt.Buckets)-1]
