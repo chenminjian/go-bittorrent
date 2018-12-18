@@ -1,6 +1,8 @@
 package swarm
 
-import "net"
+import (
+	"net"
+)
 
 type Packet struct {
 	addr *net.UDPAddr
@@ -8,7 +10,7 @@ type Packet struct {
 }
 
 func (p *Packet) IP() string {
-	return string(p.addr.IP)
+	return p.addr.IP.String()
 }
 
 func (p *Packet) Port() int {
