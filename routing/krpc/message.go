@@ -19,3 +19,15 @@ func NewFindNodeMessage(id peer.ID, target peer.ID, txID string) map[string]inte
 		"a": a,
 	}
 }
+
+func NewPingRespMessage(localID peer.ID, txID string) map[string]interface{} {
+	r := map[string]interface{}{
+		"id": localID.String(),
+	}
+
+	return map[string]interface{}{
+		"t": txID,
+		"y": "r",
+		"r": r,
+	}
+}

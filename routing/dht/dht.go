@@ -48,11 +48,8 @@ func (dht *DHT) Bootstrap(peers []addr.Addr) error {
 func (dht *DHT) FindPeer(target peer.ID) error {
 	ids := dht.routingTable.NearestPeers(target, 3)
 
-	fmt.Printf("rt size:%d\n", dht.routingTable.Size())
-	fmt.Printf("ids size:%d\n", len(ids))
-	if len(ids) > 0 {
-		fmt.Printf("id:%s\n", ids[0].Pretty())
-	}
+	fmt.Printf("routing table size:%d\n", dht.routingTable.Size())
+
 	for _, id := range ids {
 		if err := dht.findPeerSingle(id, target); err != nil {
 			fmt.Printf("findPeerSingle error: %s\n", err)
@@ -73,6 +70,24 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 		switch dict["y"] {
 		case "q":
 			fmt.Println("receive query")
+			switch dict["q"] {
+			case "ping":
+				tx, ok := dict["t"].(string)
+				if !ok {
+					return errors.New("tx is not string")
+				}
+
+				content, ok := dict["a"].(map[string]interface{})
+				if !ok {
+					return errors.New("content is not map[string]string")
+				}
+
+				addr := addr.Addr{IP: packet.IP(), Port: packet.Port()}
+
+				return dht.handlePing(tx, content, addr)
+			default:
+				return errors.New("unsupport query")
+			}
 		case "r":
 			txID, ok := dict["t"].(string)
 			if !ok {
@@ -104,8 +119,27 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 	}
 
 	if err := handler(); err != nil {
-		fmt.Println(err)
+		fmt.Printf("handle msg error:%v\n", err)
 	}
+}
+
+func (dht *DHT) handlePing(txID string, content map[string]interface{}, addr addr.Addr) error {
+	id, ok := content["id"].(string)
+	if !ok {
+		return errors.New("id is not string")
+	}
+
+	// TODO: record ID
+	fmt.Printf("receive ping request, id:%s\n", peer.ID(id).Pretty())
+
+	msg := krpc.NewPingRespMessage(dht.host.ID(), txID)
+	encodeMsg := bencoded.Encode(msg)
+
+	if err := dht.host.SendMessage(encodeMsg, addr); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (dht *DHT) handleFindNodeResp(content map[string]interface{}) error {
@@ -146,7 +180,6 @@ func (dht *DHT) doBootstrap(peers []addr.Addr) {
 		select {
 		case <-time.After(time.Second * 5):
 			if count%6 == 0 {
-				fmt.Println("a")
 				go dht.connectBootstrapPeers(peers)
 			}
 
@@ -158,6 +191,8 @@ func (dht *DHT) doBootstrap(peers []addr.Addr) {
 }
 
 func (dht *DHT) connectBootstrapPeers(peers []addr.Addr) {
+	fmt.Println("connect bootstrap peers")
+
 	id := peer.RandomID()
 	for i := 0; i < len(peers); i++ {
 		dht.bootstrapFindPeer(pstore.PeerInfo{Addr: peers[i], ID: "useless"}, id)
