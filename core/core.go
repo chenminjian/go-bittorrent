@@ -7,6 +7,7 @@ import (
 
 	"github.com/chenminjian/go-bittorrent/common/addr"
 	"github.com/chenminjian/go-bittorrent/config"
+	"github.com/chenminjian/go-bittorrent/metric"
 	"github.com/chenminjian/go-bittorrent/p2p/host"
 	"github.com/chenminjian/go-bittorrent/routing"
 )
@@ -14,6 +15,7 @@ import (
 type BTNode struct {
 	PeerHost host.Host
 	Routing  routing.Routing
+	Reporter metric.Reporter
 }
 
 func (node *BTNode) Bootstrap(conf *config.Config) error {

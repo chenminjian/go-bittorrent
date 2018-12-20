@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chenminjian/go-bittorrent/common/addr"
+	"github.com/chenminjian/go-bittorrent/metric"
 	"github.com/chenminjian/go-bittorrent/p2p/host"
 	p2pnet "github.com/chenminjian/go-bittorrent/p2p/network"
 	"github.com/chenminjian/go-bittorrent/p2p/peer"
@@ -23,14 +24,16 @@ type DHT struct {
 	routingTable *kbucket.RoutingTable
 	peerstore    pstore.PeerStore
 	txMgr        txmanager.TxManager
+	reporter     metric.Reporter
 }
 
-func New(h host.Host) *DHT {
+func New(h host.Host, reporter metric.Reporter) *DHT {
 	dht := &DHT{
 		host:         h,
 		routingTable: kbucket.NewRoutingTable(20, h.ID()),
 		peerstore:    pstore.NewPeerStore(),
 		txMgr:        txmanager.New(),
+		reporter:     reporter,
 	}
 
 	h.SetPacketHandler(dht.handlePacket)
@@ -71,7 +74,8 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 		case "q":
 			fmt.Println("receive query")
 			switch dict["q"] {
-			case "ping":
+			case krpc.Message_PING:
+				dht.reporter.PingInc()
 				tx, ok := dict["t"].(string)
 				if !ok {
 					return errors.New("tx is not string")
@@ -85,6 +89,15 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 				addr := addr.Addr{IP: packet.IP(), Port: packet.Port()}
 
 				return dht.handlePing(tx, content, addr)
+			case krpc.Message_FIND_NODE:
+				fmt.Println("receive find_node")
+				dht.reporter.FindNodeInc()
+			case krpc.Message_GET_PEERS:
+				fmt.Println("receive get_peers")
+				dht.reporter.GetPeersInc()
+			case krpc.Message_ANNOUNCE_PEER:
+				fmt.Println("receive announce_peer")
+				dht.reporter.AnnouncePeerInc()
 			default:
 				return errors.New("unsupport query")
 			}

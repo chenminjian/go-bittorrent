@@ -3,7 +3,10 @@ package krpc
 import "github.com/chenminjian/go-bittorrent/p2p/peer"
 
 const (
-	Message_FIND_NODE = "find_node"
+	Message_FIND_NODE     = "find_node"
+	Message_PING          = "ping"
+	Message_GET_PEERS     = "get_peers"
+	Message_ANNOUNCE_PEER = "announce_peer"
 )
 
 func NewFindNodeMessage(id peer.ID, target peer.ID, txID string) map[string]interface{} {
