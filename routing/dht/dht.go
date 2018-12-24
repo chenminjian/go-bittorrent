@@ -11,6 +11,7 @@ import (
 	p2pnet "github.com/chenminjian/go-bittorrent/p2p/network"
 	"github.com/chenminjian/go-bittorrent/p2p/peer"
 	"github.com/chenminjian/go-bittorrent/routing/bencoded"
+	"github.com/chenminjian/go-bittorrent/routing/block"
 	"github.com/chenminjian/go-bittorrent/routing/kbucket"
 	"github.com/chenminjian/go-bittorrent/routing/krpc"
 	pstore "github.com/chenminjian/go-bittorrent/routing/peerstore"
@@ -25,6 +26,7 @@ type DHT struct {
 	peerstore    pstore.PeerStore
 	txMgr        txmanager.TxManager
 	reporter     metric.Reporter
+	blockList    block.List
 }
 
 func New(h host.Host, reporter metric.Reporter) *DHT {
@@ -34,9 +36,12 @@ func New(h host.Host, reporter metric.Reporter) *DHT {
 		peerstore:    pstore.NewPeerStore(),
 		txMgr:        txmanager.New(),
 		reporter:     reporter,
+		blockList:    block.New(),
 	}
 
 	h.SetPacketHandler(dht.handlePacket)
+
+	dht.txMgr.SetGCHandler(dht.handleTxGC)
 
 	return dht
 }
@@ -183,6 +188,10 @@ func (dht *DHT) handleFindNodeResp(content map[string]interface{}) error {
 }
 
 func (dht *DHT) addPeer(info *pstore.PeerInfo) {
+	if dht.blockList.Contain(info.ID) {
+		return
+	}
+
 	dht.peerstore.AddAddr(*info)
 	dht.routingTable.Update(info.ID)
 }
@@ -191,8 +200,8 @@ func (dht *DHT) doBootstrap(peers []addr.Addr) {
 	var count int
 	for {
 		select {
-		case <-time.After(time.Second * 5):
-			if count%6 == 0 {
+		case <-time.After(time.Second):
+			if count%30 == 0 {
 				go dht.connectBootstrapPeers(peers)
 			}
 
@@ -234,11 +243,13 @@ func (dht *DHT) findPeerSingle(id peer.ID, target peer.ID) error {
 	dht.txMgr.Set(msg["t"].(string), &txmanager.TxInfo{
 		PeerInfo: peer,
 		Message:  msg,
+		Curr:     time.Now(),
 	})
 
 	// send msg
 	err = dht.host.SendMessage(encodeMsg, addr.Addr{IP: peer.IP, Port: peer.Port})
 	if err != nil {
+		fmt.Printf("ip:%s, port:%d\n", peer.IP, peer.Port)
 		return err
 	}
 
@@ -262,4 +273,8 @@ func (dht *DHT) bootstrapFindPeer(receiver pstore.PeerInfo, target peer.ID) erro
 	}
 
 	return nil
+}
+
+func (dht *DHT) handleTxGC(info *txmanager.TxInfo) {
+	dht.blockList.Add(info.ID)
 }

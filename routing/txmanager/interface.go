@@ -1,5 +1,7 @@
 package txmanager
 
+type GCHandler func(info *TxInfo)
+
 type TxManager interface {
 	UniqueID() string
 
@@ -8,4 +10,6 @@ type TxManager interface {
 	Set(key string, val *TxInfo)
 
 	Del(key string)
+
+	SetGCHandler(handler GCHandler)
 }

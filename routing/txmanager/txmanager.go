@@ -3,18 +3,26 @@ package txmanager
 import (
 	"encoding/binary"
 	"sync"
+	"time"
 )
 
 type txManager struct {
-	idCount uint32
-	txMap   map[string]*TxInfo
-	mutex   sync.RWMutex
+	idCount   uint32
+	txMap     map[string]*TxInfo
+	gcHandler GCHandler
+	gcPeriod  time.Duration
+	mutex     sync.RWMutex
 }
 
 func New() TxManager {
-	return &txManager{
-		txMap: make(map[string]*TxInfo),
+	mgr := &txManager{
+		txMap:    make(map[string]*TxInfo),
+		gcPeriod: 2 * time.Minute,
 	}
+
+	go mgr.gcWorker()
+
+	return mgr
 }
 
 func (tm *txManager) UniqueID() string {
@@ -50,4 +58,43 @@ func (tm *txManager) Del(key string) {
 	defer tm.mutex.Unlock()
 
 	delete(tm.txMap, key)
+}
+
+func (tm *txManager) SetGCHandler(handler GCHandler) {
+	tm.mutex.Lock()
+	defer tm.mutex.Unlock()
+
+	tm.gcHandler = handler
+}
+
+func (tm *txManager) gcWorker() {
+	for {
+		select {
+		case <-time.After(time.Second * 30):
+			tm.gc()
+		}
+	}
+}
+
+func (tm *txManager) gc() {
+	tm.mutex.Lock()
+	defer tm.mutex.Unlock()
+
+	zero := time.Time{}
+
+	curr := time.Now()
+
+	for k, v := range tm.txMap {
+		if v.Curr == zero {
+			continue
+		}
+
+		if curr.Sub(v.Curr) > tm.gcPeriod {
+			delete(tm.txMap, k)
+
+			if tm.gcHandler != nil {
+				tm.gcHandler(v)
+			}
+		}
+	}
 }
