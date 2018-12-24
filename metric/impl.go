@@ -7,7 +7,10 @@ type impl struct {
 	findNodeNum     int
 	getPeersNum     int
 	announcePeerNum int
-	mutex           sync.RWMutex
+
+	blockNodeNum int
+
+	mutex sync.RWMutex
 }
 
 func New() Reporter {
@@ -68,4 +71,18 @@ func (im *impl) AnnouncePeerInc() {
 	defer im.mutex.Unlock()
 
 	im.announcePeerNum++
+}
+
+func (im *impl) BlockNodeNum() int {
+	im.mutex.RLock()
+	defer im.mutex.RUnlock()
+
+	return im.blockNodeNum
+}
+
+func (im *impl) SetBlockNodeNum(num int) {
+	im.mutex.Lock()
+	defer im.mutex.Unlock()
+
+	im.blockNodeNum = num
 }

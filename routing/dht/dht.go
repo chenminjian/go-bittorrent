@@ -277,4 +277,6 @@ func (dht *DHT) bootstrapFindPeer(receiver pstore.PeerInfo, target peer.ID) erro
 
 func (dht *DHT) handleTxGC(info *txmanager.TxInfo) {
 	dht.blockList.Add(info.ID)
+
+	dht.reporter.SetBlockNodeNum(dht.blockList.Size())
 }

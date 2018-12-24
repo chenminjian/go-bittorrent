@@ -16,4 +16,8 @@ type Reporter interface {
 	GetPeersInc()
 
 	AnnouncePeerInc()
+
+	BlockNodeNum() int
+
+	SetBlockNodeNum(num int)
 }

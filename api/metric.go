@@ -8,6 +8,7 @@ import (
 
 type Metric struct {
 	Receive Receive `json:"receive"`
+	Block   Block   `json:"block"`
 }
 
 type Receive struct {
@@ -17,16 +18,21 @@ type Receive struct {
 	AnnouncePeer int `json:"announce_peer"`
 }
 
-func (api *Api) Metric(c *gin.Context) {
-	r := Receive{
-		Ping:         api.node.Reporter.PingNum(),
-		FindNode:     api.node.Reporter.FindNodeNum(),
-		GetPEERS:     api.node.Reporter.GetPeersNum(),
-		AnnouncePeer: api.node.Reporter.AnnouncePeerNum(),
-	}
+type Block struct {
+	Size int `json:"size"`
+}
 
+func (api *Api) Metric(c *gin.Context) {
 	m := Metric{
-		Receive: r,
+		Receive: Receive{
+			Ping:         api.node.Reporter.PingNum(),
+			FindNode:     api.node.Reporter.FindNodeNum(),
+			GetPEERS:     api.node.Reporter.GetPeersNum(),
+			AnnouncePeer: api.node.Reporter.AnnouncePeerNum(),
+		},
+		Block: Block{
+			Size: api.node.Reporter.BlockNodeNum(),
+		},
 	}
 
 	c.JSON(http.StatusOK, gin.H{
