@@ -2,26 +2,31 @@ package block
 
 import (
 	"sync"
+	"time"
 
 	"github.com/chenminjian/go-bittorrent/p2p/peer"
 )
 
 type list struct {
-	peers map[peer.ID]interface{}
+	peers map[peer.ID]time.Time
 	mutex sync.RWMutex
 }
 
 func New() List {
-	return &list{
-		peers: make(map[peer.ID]interface{}),
+	l := &list{
+		peers: make(map[peer.ID]time.Time),
 	}
+
+	l.gc(time.Hour)
+
+	return l
 }
 
 func (l *list) Add(id peer.ID) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
-	l.peers[id] = struct{}{}
+	l.peers[id] = time.Now()
 }
 
 func (l *list) Size() int {
@@ -39,4 +44,16 @@ func (l *list) Contain(id peer.ID) bool {
 		return true
 	}
 	return false
+}
+
+func (l *list) gc(period time.Duration) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	now := time.Now()
+	for k, v := range l.peers {
+		if now.Sub(v) > period {
+			delete(l.peers, k)
+		}
+	}
 }
