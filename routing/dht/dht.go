@@ -78,20 +78,22 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 		switch dict["y"] {
 		case "q":
 			fmt.Println("receive query")
+
+			tx, ok := dict["t"].(string)
+			if !ok {
+				return errors.New("tx is not string")
+			}
+
+			content, ok := dict["a"].(map[string]interface{})
+			if !ok {
+				return errors.New("content is not map[string]string")
+			}
+
+			addr := addr.Addr{IP: packet.IP(), Port: packet.Port()}
+
 			switch dict["q"] {
 			case krpc.Message_PING:
 				dht.reporter.PingInc()
-				tx, ok := dict["t"].(string)
-				if !ok {
-					return errors.New("tx is not string")
-				}
-
-				content, ok := dict["a"].(map[string]interface{})
-				if !ok {
-					return errors.New("content is not map[string]string")
-				}
-
-				addr := addr.Addr{IP: packet.IP(), Port: packet.Port()}
 
 				return dht.handlePing(tx, content, addr)
 			case krpc.Message_FIND_NODE:
