@@ -102,9 +102,13 @@ func (dht *DHT) handlePacket(packet p2pnet.Packet) {
 			case krpc.Message_GET_PEERS:
 				fmt.Println("receive get_peers")
 				dht.reporter.GetPeersInc()
+
+				return dht.handleGetPeers(tx, content, addr)
 			case krpc.Message_ANNOUNCE_PEER:
 				fmt.Println("receive announce_peer")
 				dht.reporter.AnnouncePeerInc()
+
+				return dht.handleAnnouncePeer(tx, content, addr)
 			default:
 				return errors.New("unsupport query")
 			}
@@ -158,6 +162,50 @@ func (dht *DHT) handlePing(txID string, content map[string]interface{}, addr add
 	if err := dht.host.SendMessage(encodeMsg, addr); err != nil {
 		return err
 	}
+
+	return nil
+}
+
+func (dht *DHT) handleGetPeers(txID string, content map[string]interface{}, addr addr.Addr) error {
+	id, ok := content["id"].(string)
+	if !ok {
+		return errors.New("id is not string")
+	}
+
+	// TODO: record ID
+	fmt.Printf("receive get_peers request, id:%s\n", peer.ID(id).Pretty())
+
+	return nil
+}
+
+func (dht *DHT) handleAnnouncePeer(txID string, content map[string]interface{}, addr addr.Addr) error {
+	id, ok := content["id"].(string)
+	if !ok {
+		return errors.New("id is not string")
+	}
+
+	infoHash, ok := content["info_hash"].(string)
+	if !ok {
+		return errors.New("info_hash is not string")
+	}
+
+	token, ok := content["token"].(string)
+	if !ok {
+		return errors.New("token is not string")
+	}
+
+	port, ok := content["port"].(int)
+	if !ok {
+		return errors.New("port is not int")
+	}
+
+	impliedPort, ok := content["implied_port"].(int)
+	if !ok {
+		return errors.New("implied_port is not int")
+	}
+
+	fmt.Printf("receive announce_peer, id:%s, info_hash:%s, token:%s, port:%d, implied_port:%d\n",
+		peer.ID(id).Pretty(), infoHash, token, port, impliedPort)
 
 	return nil
 }
